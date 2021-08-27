@@ -4,12 +4,27 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import software.amazon.awscdk.core.Construct;
+import software.amazon.awscdk.core.ConstructNode;
 import software.amazon.awscdk.core.Duration;
+import software.amazon.awscdk.core.ResourceEnvironment;
 import software.amazon.awscdk.core.Stack;
+import software.amazon.awscdk.services.apigateway.ApiKey;
+import software.amazon.awscdk.services.apigateway.ApiKeyOptions;
+import software.amazon.awscdk.services.apigateway.IApiKey;
+import software.amazon.awscdk.services.apigateway.IRestApi;
 import software.amazon.awscdk.services.apigateway.LambdaIntegration;
+import software.amazon.awscdk.services.apigateway.MethodOptions;
 import software.amazon.awscdk.services.apigateway.Resource;
 import software.amazon.awscdk.services.apigateway.RestApi;
+import software.amazon.awscdk.services.apigateway.Stage;
+import software.amazon.awscdk.services.apigateway.UsagePlan;
+import software.amazon.awscdk.services.apigateway.UsagePlanPerApiStage;
+import software.amazon.awscdk.services.apigateway.UsagePlanProps;
 import software.amazon.awscdk.services.iam.IManagedPolicy;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.Role;
@@ -58,20 +73,47 @@ public class MyWidgetServiceStack extends Stack {
     Map<String, String> lambdaIntegrationMap = new HashMap<String, String>();
     lambdaIntegrationMap.put("application/json", "{ \"statusCode\": \"200\" }");
 
-    LambdaIntegration getWidgetIntegration =
-        LambdaIntegration.Builder.create(lambdaFunction)
-            .requestTemplates(lambdaIntegrationMap)
-            .build();
-
-    api.getRoot().addMethod("GET", getWidgetIntegration);
-
     LambdaIntegration postWidgetIntegration = new LambdaIntegration(lambdaFunction);
-    LambdaIntegration deleteWidgetIntegration = new LambdaIntegration(lambdaFunction);
+    
+	MethodOptions options = new MethodOptions() {
+		@Override
+		public @Nullable Boolean getApiKeyRequired() {
+			return true;
+		}
+	};
+	api.getRoot().addMethod("POST", postWidgetIntegration, options );
+	
+	UsagePlanProps props = new UsagePlanProps() {
+		
+		public @Nullable String getName() {
+			return "webhook";
+		}
+	};
+	
+	UsagePlan plan = api.addUsagePlan("forwebhook",props);
 
-    Resource widget = api.getRoot().addResource("{id}");
+//	ApiKeyOptions apiKeyOptions = new ApiKeyOptions() {
+//		@Override
+//		public @Nullable String getValue() {
+//			return "E5A656AD-DE37-4664-9C20-EA16D7E70B1E";
+//		}
+//	};
+	IApiKey key = api.addApiKey("for-webhook-secret-key" );
+	
+	plan.addApiKey(key);
 
-    widget.addMethod("POST", postWidgetIntegration);
-    widget.addMethod("GET", getWidgetIntegration);
-    widget.addMethod("DELETE", deleteWidgetIntegration);
+	UsagePlanPerApiStage apiStage = new UsagePlanPerApiStage() {
+		@Override
+		public @Nullable Stage getStage() {
+			return api.getDeploymentStage();
+		}
+		@Override
+		public @Nullable IRestApi getApi() {
+			return api;
+
+		}
+	};
+	plan.addApiStage(apiStage);
+
   }
 }
