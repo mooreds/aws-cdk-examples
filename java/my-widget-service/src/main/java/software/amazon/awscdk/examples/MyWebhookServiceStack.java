@@ -34,16 +34,16 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.s3.Bucket;
 
-public class MyWidgetServiceStack extends Stack {
-  public MyWidgetServiceStack(final Construct scope, final String id) {
+public class MyWebhookServiceStack extends Stack {
+  public MyWebhookServiceStack(final Construct scope, final String id) {
     super(scope, id, null);
 
-    Bucket bucket = Bucket.Builder.create(this, "WidgetStore").build();
+    Bucket bucket = Bucket.Builder.create(this, "webhookevents").build();
 
     RestApi api =
-        RestApi.Builder.create(this, "widgets-api")
-            .restApiName("Widget Service")
-            .description("This service serves widgets.")
+        RestApi.Builder.create(this, "webhook-ingestion-api")
+            .restApiName("Webhook ingestion Service")
+            .description("This service ingests FusionAuth webhook events.")
             .build();
 
     List<IManagedPolicy> managedPolicyArray = new ArrayList<IManagedPolicy>();
@@ -60,10 +60,10 @@ public class MyWidgetServiceStack extends Stack {
     environmentVariables.put("BUCKET", bucket.getBucketName());
 
     Function lambdaFunction =
-        Function.Builder.create(this, "WidgetHandler")
+        Function.Builder.create(this, "WebhookHandler")
             .code(Code.fromAsset("resources"))
-            .handler("widgets.main")
-            .timeout(Duration.seconds(300))
+            .handler("webhook.main")
+            .timeout(Duration.seconds(30))
             .runtime(Runtime.NODEJS_10_X)
             .environment(environmentVariables)
             .build();
@@ -73,7 +73,7 @@ public class MyWidgetServiceStack extends Stack {
     Map<String, String> lambdaIntegrationMap = new HashMap<String, String>();
     lambdaIntegrationMap.put("application/json", "{ \"statusCode\": \"200\" }");
 
-    LambdaIntegration postWidgetIntegration = new LambdaIntegration(lambdaFunction);
+    LambdaIntegration postIntegration = new LambdaIntegration(lambdaFunction);
     
 	MethodOptions options = new MethodOptions() {
 		@Override
@@ -81,7 +81,7 @@ public class MyWidgetServiceStack extends Stack {
 			return true;
 		}
 	};
-	api.getRoot().addMethod("POST", postWidgetIntegration, options );
+	api.getRoot().addMethod("POST", postIntegration, options );
 	
 	UsagePlanProps props = new UsagePlanProps() {
 		

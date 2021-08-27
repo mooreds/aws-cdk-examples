@@ -5,8 +5,8 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.amazonaws.cdk</groupId>
-	<artifactId>my-widget-service</artifactId>
+	<groupId>io.fusionauth.example</groupId>
+	<artifactId>my-webhook-service</artifactId>
 	<version>1.0.0</version>
 
 	<properties>
@@ -35,7 +35,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>com.amazonaws.cdk.examples.MyWidgetServiceApp</mainClass>
+                            <mainClass>com.amazonaws.cdk.examples.MyWebhookServiceApp</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
